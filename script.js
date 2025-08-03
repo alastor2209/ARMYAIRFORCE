@@ -1,18 +1,28 @@
 // script.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 
 // Global variables provided by the environment
+// We'll keep this variable for Firestore pathing as it's specific to the Canvas environment
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+// Your Firebase configuration as provided
+const firebaseConfig = {
+    apiKey: "AIzaSyDYirZSYiB8hcdOy7I4KORsv8u7xGIR2og",
+    authDomain: "armyairforce-343a9.firebaseapp.com",
+    projectId: "armyairforce-343a9",
+    storageBucket: "armyairforce-343a9.firebasestorage.app",
+    messagingSenderId: "581812076062",
+    appId: "1:581812076062:web:fc3c3527c381b5bbe5f80f",
+    measurementId: "G-HJK6QMQK0Z"
+};
 
 // Firebase instances
-let app, db, auth;
+let app, db, auth, analytics;
 let user;
-let isAuthReady = false;
 
 // Pre-defined units and colors
 const unitsAndColors = {
@@ -50,8 +60,8 @@ function showAlert(message) {
     appContainer.classList.remove('hidden');
 }
 
-// Initialize Firebase and THREE.js
-window.onload = async () => {
+// Function to initialize and set up the entire application
+async function initializeAppAndCanvas() {
     // Populate dropdowns
     ranks.forEach(rank => {
         const option = document.createElement('option');
@@ -68,59 +78,54 @@ window.onload = async () => {
     unitSelect.value = userUnit;
     markerColorDisplay.style.backgroundColor = userColor;
 
-    // --- Firebase Initialization ---
-    // Added a check to ensure Firebase configuration exists before initialization
-    if (Object.keys(firebaseConfig).length === 0 || !initialAuthToken) {
-        console.error('Firebase configuration or auth token is missing.');
-        showAlert('เกิดข้อผิดพลาด: ข้อมูลการเชื่อมต่อ Firebase ไม่สมบูรณ์');
-        return; // Stop execution
-    }
-
+    // --- Firebase Initialization and Auth ---
     try {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
+        analytics = getAnalytics(app); // Initialize analytics as per user's code
 
-        // This listener ensures we only proceed after authentication state is confirmed.
-        onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                user = currentUser;
-                isAuthReady = true;
-                userIdDisplay.textContent = user.uid;
+        // Sign in anonymously and wait for the process to complete
+        await signInAnonymously(auth);
+        
+        user = auth.currentUser;
+        if (!user) {
+            console.error('User is null after sign-in. Authentication failed.');
+            showAlert('ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง');
+            return;
+        }
 
-                // Fetch or create user data
-                const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid);
-                const docSnap = await getDoc(userDocRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    userRank = data.rank || 'พลทหาร';
-                    userUnit = data.unit || 'หน่วยรบพิเศษ';
-                    userColor = data.color || unitsAndColors[userUnit];
-                } else {
-                    await setDoc(userDocRef, {
-                        rank: userRank,
-                        unit: userUnit,
-                        userId: user.uid,
-                        color: userColor
-                    });
-                }
-                rankSelect.value = userRank;
-                unitSelect.value = userUnit;
-                markerColorDisplay.style.backgroundColor = userColor;
+        // Authentication successful, proceed with app setup
+        userIdDisplay.textContent = user.uid;
 
-                // Set up real-time marker listener after auth is ready
-                setupMarkerListener();
-                // Hide loading screen and show app
-                loadingScreen.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-            } else {
-                // Handle cases where authentication fails or user is not found
-                console.error('Firebase Auth state is not ready. User is null.');
-                showAlert('ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง');
-            }
-        });
+        // Fetch or create user data
+        const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid);
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            userRank = data.rank || 'พลทหาร';
+            userUnit = data.unit || 'หน่วยรบพิเศษ';
+            userColor = data.color || unitsAndColors[userUnit];
+        } else {
+            await setDoc(userDocRef, {
+                rank: userRank,
+                unit: userUnit,
+                userId: user.uid,
+                color: userColor
+            });
+        }
+        rankSelect.value = userRank;
+        unitSelect.value = userUnit;
+        markerColorDisplay.style.backgroundColor = userColor;
+
+        // Set up real-time marker listener after auth is ready
+        setupMarkerListener();
+        
+        // Hide loading screen and show app
+        loadingScreen.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+
     } catch (error) {
-        // Catch any errors during Firebase initialization itself
         console.error('Error during Firebase initialization or sign-in:', error);
         showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
     }
@@ -166,7 +171,10 @@ window.onload = async () => {
         renderer.render(scene, camera);
     };
     animate();
-};
+}
+
+// Call the main initialization function on window load
+window.onload = initializeAppAndCanvas;
 
 // Function to set up the Firestore real-time listener
 function setupMarkerListener() {
