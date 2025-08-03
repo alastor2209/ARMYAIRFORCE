@@ -1,0 +1,85 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบมาร์คจุดทางยุทธวิธี</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="text-xl font-bold">กำลังโหลด... กรุณารอสักครู่</div>
+    </div>
+
+    <!-- Custom Alert Box -->
+    <div id="alert-box" class="alert-box hidden">
+        <p></p>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app-container" class="app-container hidden">
+        <!-- Header -->
+        <header class="bg-gray-800 p-4 shadow-md flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-green-400">ระบบมาร์คจุดทางยุทธวิธี</h1>
+            <div class="text-sm">
+                <p>User ID: <span id="user-id" class="font-mono">...</span></p>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="flex flex-1">
+            <!-- Control Panel (Sidebar) -->
+            <aside class="w-1/4 bg-gray-800 p-4 border-r border-gray-700 overflow-y-auto">
+                <div class="space-y-6">
+                    <!-- User Info & Controls -->
+                    <div class="bg-gray-700 p-4 rounded-lg shadow-inner">
+                        <h2 class="text-xl font-semibold mb-2 text-green-400">ข้อมูลผู้ใช้</h2>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400">ยศ:</label>
+                                <select id="user-rank-select" class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 text-white"></select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400">หน่วย:</label>
+                                <select id="user-unit-select" class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 text-white"></select>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div id="marker-color-display" class="w-6 h-6 rounded-full"></div>
+                                <span class="text-sm text-gray-300">สีของจุดมาร์ค</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marker List -->
+                    <div class="bg-gray-700 p-4 rounded-lg shadow-inner">
+                        <h2 class="text-xl font-semibold mb-2 text-green-400">จุดมาร์คที่ใช้งานอยู่</h2>
+                        <ul id="marker-list" class="space-y-2 max-h-60 overflow-y-auto">
+                            <!-- Markers will be populated here by JavaScript -->
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-center mt-4">
+                        <button id="refresh-button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition duration-200">
+                            รีเฟรชแผนที่
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 3D Map View -->
+            <main class="flex-1 relative">
+                <canvas id="map-canvas" class="w-full h-full"></canvas>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Firebase CDN and custom script -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
